@@ -11,6 +11,11 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
+
+<!-- ПОДКЛЮЧЕНИЕ SDK ЯНДЕКС ИГР -->
+<!-- Используем относительный путь, как рекомендуется в документации для загрузки архива -->
+<script src="./sdk.js"></script>
+
 <title>Золотой Стол — Мини-казино</title>
 <style>
   :root{
@@ -732,6 +737,28 @@
 (function(){
   "use strict";
 
+  /* ---------- YANDEX SDK INIT ---------- */
+  if (typeof YaGames !== "undefined") {
+    YaGames.init().then(function(ysdk) {
+      console.log("Yandex Games SDK initialized successfully");
+      // Если нужно, можно вызвать ysdk.features.LoadingAPI.ready();
+    }).catch(function(err) {
+      console.error("Yandex Games SDK init error:", err);
+    });
+  } else {
+    console.warn("Yandex Games SDK not found. Running in local mode.");
+  }
+
+  /* ---------- SAFE STORAGE ---------- */
+  var storage = {
+    get: function(key) {
+      try { return localStorage.getItem(key); } catch(e) { return null; }
+    },
+    set: function(key, value) {
+      try { localStorage.setItem(key, value); } catch(e) {}
+    }
+  };
+
   /* ---------- I18N ---------- */
   var translations = {
     ru: {
@@ -1013,7 +1040,7 @@
   };
 
   var langKey = "zolotoy_stol_lang";
-  var currentLang = localStorage.getItem(langKey);
+  var currentLang = storage.get(langKey);
   if(currentLang !== "ru" && currentLang !== "en") currentLang = "ru";
 
   function t(key, params){
@@ -1060,19 +1087,19 @@
   document.querySelectorAll(".lang-btn").forEach(function(btn){
     btn.addEventListener("click", function(){
       currentLang = btn.dataset.lang;
-      localStorage.setItem(langKey, currentLang);
+      storage.set(langKey, currentLang);
       applyStaticTranslations();
     });
   });
 
   /* ---------- BALANCE ---------- */
   var balanceKey = "zolotoy_stol_balance";
-  var balance = parseFloat(localStorage.getItem(balanceKey));
+  var balance = parseFloat(storage.get(balanceKey));
   if(isNaN(balance) || balance < 0) balance = 1000000;
   var balanceEl = document.getElementById("balanceDisplay");
   function setBalance(v){
     balance = Math.max(0, Math.round(v * 10) / 10);
-    localStorage.setItem(balanceKey, balance);
+    storage.set(balanceKey, balance);
     balanceEl.textContent = balance.toLocaleString(currentLang === "ru" ? "ru-RU" : "en-US", {minimumFractionDigits: 1, maximumFractionDigits: 1});
     if(typeof window.refreshClickerShop === "function"){ window.refreshClickerShop(); }
     if(balance === 0){
@@ -2132,7 +2159,7 @@
   (function(){
     var SKEY = "zolotoy_stol_clicker";
     var state = null;
-    try { state = JSON.parse(localStorage.getItem(SKEY)); } catch(e){ state = null; }
+    try { state = JSON.parse(storage.get(SKEY)); } catch(e){ state = null; }
     if(!state || typeof state !== "object") state = {};
     state.totalClicks = state.totalClicks||0;
     state.totalEarned = state.totalEarned||0;
@@ -2145,7 +2172,7 @@
     state.critDone = !!state.critDone;
     state.upgBought = state.upgBought||0;
     state.bizOwned = state.bizOwned||0;
-    function save(){ try{ localStorage.setItem(SKEY, JSON.stringify(state)); }catch(e){} }
+    function save(){ storage.set(SKEY, JSON.stringify(state)); }
 
     var SKINS = [
       {i:"🪙", lvl:1},{i:"🥈", lvl:3},{i:"💰", lvl:5},
