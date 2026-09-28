@@ -13,8 +13,8 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <!-- ПОДКЛЮЧЕНИЕ SDK ЯНДЕКС ИГР -->
-<!-- Используем относительный путь, как рекомендуется в документации для загрузки архива -->
-<script src="./sdk.js"></script>
+<!-- Асинхронная загрузка с вызовом initSDK после загрузки -->
+<script async src="./sdk.js" onload="initSDK()"></script>
 
 <title>Золотой Стол — Мини-казино</title>
 <style>
@@ -738,18 +738,26 @@
   "use strict";
 
   /* ---------- YANDEX SDK INIT ---------- */
-  if (typeof YaGames !== "undefined") {
-    YaGames.init().then(function(ysdk) {
-      console.log("Yandex Games SDK initialized successfully");
-      // Если нужно, можно вызвать ysdk.features.LoadingAPI.ready();
-    }).catch(function(err) {
-      console.error("Yandex Games SDK init error:", err);
-    });
-  } else {
-    console.warn("Yandex Games SDK not found. Running in local mode.");
-  }
+  // Вызывается из <script async src="./sdk.js" onload="initSDK()">
+  window.initSDK = async function() {
+    if (typeof YaGames !== "undefined") {
+      try {
+        const ysdk = await YaGames.init();
+        console.log("Yandex Games SDK initialized successfully", ysdk);
+        
+        // Здесь можно инициализировать рекламу, покупки и т.д.
+        // Например: ysdk.features.LoadingAPI.ready();
+        
+      } catch (err) {
+        console.error("Yandex Games SDK init error:", err);
+      }
+    } else {
+      console.warn("Yandex Games SDK not found. Running in local mode.");
+    }
+  };
 
   /* ---------- SAFE STORAGE ---------- */
+  // Безопасная обертка для localStorage, чтобы игра не падала в iframe или инкогнито
   var storage = {
     get: function(key) {
       try { return localStorage.getItem(key); } catch(e) { return null; }
